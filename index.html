@@ -4,15 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LUMENVEIL — Astral Wish</title>
-<meta name="description" content="Sistem gacha original bergaya 'wish' — Three.js cinematic summon, pity system, 50/50. Semua aset generatif, tanpa IP pihak ketiga.">
+<meta name="description" content="Sistem gacha original bergaya 'wish' — Three.js cinematic summon, pity system, 50/50, multi-banner. Semua aset orisinal, tanpa IP pihak ketiga.">
+<meta name="theme-color" content="#080a16">
+<meta property="og:title" content="LUMENVEIL — Astral Wish">
+<meta property="og:description" content="Sistem gacha original: cinematic summon 3D, pity system, 50/50, multi-banner.">
+<meta property="og:type" content="website">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/style.css">
-
-<!--
-  Three.js dimuat lewat dynamic import() di js/scene3d.js (bukan <script> di sini) supaya:
-  1) kalau CDN mati / WebGL tidak support, aplikasi tetap jalan penuh di fallback 2D,
-  2) halaman bisa diuji di jsdom (yang tidak punya WebGL) tanpa error.
--->
 </head>
 <body>
 
@@ -39,7 +37,7 @@
   </div>
 
   <div class="topbar-right">
-    <!-- Currency -->
+    <!-- Currency: gems + sigils -->
     <div class="wallet" id="wallet" title="Klik untuk isi gems (dev top-up)">
       <svg viewBox="0 0 24 24" class="gem-icon" aria-hidden="true">
         <path d="M12 2 20 8l-8 14L4 8Z" fill="url(#gemFill)"/>
@@ -51,12 +49,16 @@
         </defs>
       </svg>
       <span id="gemCount" class="gem-count">0</span>
-      <span class="wallet-plus">+</span>
+      <span class="wallet-plus" aria-hidden="true">+</span>
+    </div>
+    <div class="wallet sigil-wallet" title="Astral Sigils — dari item duplikat, bisa ditukar di Shop">
+      <span class="sigil-glyph" aria-hidden="true">✦</span>
+      <span id="sigilCount" class="gem-count">0</span>
     </div>
 
     <button class="ghost-btn" id="btnRates" aria-expanded="false">✦ Rate &amp; Pity</button>
     <button class="ghost-btn" id="btnSfx" aria-pressed="true" title="SFX aktif">🔊 SFX</button>
-    <button class="ghost-btn" id="btnMode" title="Ganti engine animasi (3D WebGL / 2D CSS)">◈ 3D</button>
+    <span class="ghost-btn engine-badge" id="btnMode" title="Engine animasi aktif">◈ …</span>
   </div>
 </header>
 
@@ -65,8 +67,9 @@
 
   <!-- ───────── BANNER (GachaBanner) ───────── -->
   <section class="banner-panel" id="bannerPanel" aria-label="Banner wish">
-    <!-- background generatif: SVG pattern + gradient, bukan artwork eksternal -->
+    <!-- background: key art generatif + lapisan aurora/grid/rings + vignette -->
     <div class="banner-bg" aria-hidden="true">
+      <div class="banner-art" style="background-image:url('assets/banner-astral.png')"></div>
       <div class="banner-aurora"></div>
       <div class="banner-grid"></div>
       <svg class="banner-rings" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
@@ -88,25 +91,25 @@
           <ellipse cx="400" cy="276" rx="242" ry="242" opacity=".34"/>
           <ellipse cx="400" cy="276" rx="322" ry="322" opacity=".18"/>
         </g>
-        <g id="bannerGlyphs" stroke="#ffe0a0" stroke-opacity=".55" fill="none" stroke-width="1.4">
-          <!-- rune ticks diisi JS (deterministic) -->
-        </g>
       </svg>
       <div class="banner-vignette"></div>
     </div>
 
+    <!-- tabs banner (pity per-banner) -->
+    <div class="banner-tabs" id="bannerTabs"></div>
+
     <div class="banner-content">
-      <div class="banner-tag">BANNER TERBATAS · CELESTIAL FORGE</div>
+      <div class="banner-tag" id="bannerTag">BANNER TERBATAS · CELESTIAL FORGE</div>
       <h2 class="banner-title" id="bannerTitle">Crown of Embers</h2>
       <p class="banner-sub" id="bannerSub">Rate-up: <strong>Virelai, Crown of Embers</strong> ★5</p>
 
       <div class="featured-card" id="featuredCard">
         <div class="featured-art" id="featuredArt" style="background-image:url('assets/items/virelai.png')"></div>
         <div class="featured-meta">
-          <span class="rarity-stars" data-r="5">★★★★★</span>
+          <span class="rarity-stars" id="rarityStars" data-r="5">★★★★★</span>
           <span class="featured-name" id="featuredName">Virelai</span>
-          <span class="featured-type" id="featuredType">Ember Dancer · 5★ Featured</span>
-          <div class="featured-chance" id="featuredChance">Peluang saat ★5 muncul: 50% (naik 100% setelah guarantee)</div>
+          <span class="featured-type" id="featuredType">★5 Featured · 50/50</span>
+          <div class="featured-chance" id="featuredChance">Peluang saat ★5 muncul: 50% featured (100% setelah kalah)</div>
         </div>
       </div>
 
@@ -155,11 +158,23 @@
     <div class="panel-body" id="rateBody"><!-- diisi JS --></div>
   </aside>
 
-  <!-- ───────── LOG + STATS ───────── -->
+  <!-- ───────── LOG + STATS + SHOP + DEV ───────── -->
   <section class="trackers">
-    <div class="card stats-card">
-      <h3>Statistik</h3>
-      <div class="stat-grid" id="statGrid"></div>
+    <div class="col">
+      <div class="card stats-card">
+        <h3>Statistik</h3>
+        <div class="stat-grid" id="statGrid"></div>
+      </div>
+      <div class="card shop-card">
+        <h3>✦ Astral Sigil Shop</h3>
+        <p class="shop-hint">Item duplikat jadi sigils (★3→5, ★4→20, ★5→150). Tukar ke gems.</p>
+        <div class="shop-list" id="shopList"></div>
+      </div>
+      <div class="card dev-card">
+        <h3>🛠 Dev Tools</h3>
+        <p class="shop-hint">Untuk demo — paksa pity agar ★5 terlihat.</p>
+        <div class="dev-panel" id="devPanel"></div>
+      </div>
     </div>
 
     <div class="card history-card">
@@ -192,6 +207,7 @@
   </div>
 
   <!-- hasil -->
+  <div class="showcase" id="showcase" hidden></div>
   <div class="result-layer" id="resultLayer" hidden></div>
 </div>
 
@@ -203,9 +219,13 @@
   bukan aset game berhak cipta mana pun.</p>
 </footer>
 
+<!-- Three.js r128 di-vendor lokal (offline-mandiri, tanpa ketergantungan CDN).
+     Kalau file ini hilang, scene3d.js otomatis turun ke fallback CSS 2D. -->
+<script src="js/vendor/three.min.js" onerror="window.__THREE_LOAD_FAIL=true"></script>
 <script src="js/items.js"></script>
 <script src="js/gacha-core.js"></script>
-<script src="js/portrait.js"></script>
+<script src="js/banners.js"></script>
+<script src="js/shop.js"></script>
 <script src="js/sfx.js"></script>
 <script src="js/scene2d.js"></script>
 <script src="js/scene3d.js"></script>
