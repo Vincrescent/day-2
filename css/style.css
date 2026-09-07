@@ -46,5 +46,5 @@
 .auth-btn{width:100%;padding:12px;border-radius:10px;border:0;background:linear-gradient(135deg,#ffd76e,#b96cff);
   color:#10101c;font-weight:800;cursor:pointer;font-size:15px}
 .auth-btn:hover{opacity:.9}
-.auth-toggle{margin-top:18px;text-align:center;font-size:14px;color:#8fb4ff;cursor:pointer;user-select:none;padding:8px 12px;border-radius:10px}.auth-toggle b{color:#ffd36b;text-decoration:underline}.auth-toggle:hover{background:#ffffff0d}.auth-toggle:hover b{color:#fff}
+.auth-toggle-btn{display:block;width:100%;margin-top:18px;padding:12px 16px;border-radius:10px;border:1px solid #ffffff22;background:#ffffff0d;color:#8fb4ff;font-size:14px;font-weight:600;cursor:pointer;user-select:none}.auth-toggle-btn b{color:#ffd36b;text-decoration:underline}.auth-toggle-btn:hover{background:#ffffff18}.auth-toggle-btn:hover b{color:#fff}.auth-toggle-aside{text-align:center;margin-top:12px}.auth-toggle:hover b{color:#fff}
 .auth-toggle button{background:none;border:none;color:var(--blue);cursor:pointer;text-decoration:underline}

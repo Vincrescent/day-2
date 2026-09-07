@@ -30,9 +30,10 @@ T('setelah toggle: teks jadi "Sudah punya akun"',String(await ev("document.getEl
 
 // isi form register + submit
 await ev(`document.getElementById('authUsername').value='${uname}';document.getElementById('authPassword').value='pass1234';document.getElementById('authForm').dispatchEvent(new Event('submit',{cancelable:true}));1`);
-await new Promise(r=>setTimeout(r,3000));
-T('overlay hilang setelah DAFTAR',await ev("document.getElementById('authOverlay').hidden")===true);
+await new Promise(r=>setTimeout(r,1200));
 T('toast "Akun dibuat" muncul',String(await ev("document.querySelector('.toast')?.textContent||''")).includes('Akun dibuat'),String(await ev("document.querySelector('.toast')?.textContent||''")));
+await new Promise(r=>setTimeout(r,1800));
+T('overlay hilang setelah DAFTAR',await ev("document.getElementById('authOverlay').hidden")===true);
 T('token tersimpan',String(await ev("localStorage.getItem('lumenvail-auth')")).length>=32);
 T('gem baru 16000',String(await ev("document.getElementById('gemCount').textContent")).replace('.','').includes('16000'),String(await ev("document.getElementById('gemCount').textContent")));
 
