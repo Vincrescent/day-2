@@ -18,6 +18,7 @@ window.Shop={
     state.sigils=state.sigils||0;
     var dup=state.owned[item.name]||0;
     state.owned[item.name]=dup+1;
+    if(dup>0)state.sigils+=SIGILS[item.rarity];
     return dup>0?SIGILS[item.rarity]:0;
   },
   trade:function(state,id){

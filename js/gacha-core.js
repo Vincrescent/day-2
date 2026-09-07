@@ -7,21 +7,21 @@
    ══════════════════════════════════════════════════════════════════════ */
 (function(){'use strict';
 
-/* ── Konstanta (ubah di sini, panel rate & statistik membaca dari RATES) ─
+/* ── Konstanta (ubah di sini, panel rate & statistik membaca dari RATES) ──
    RATE_5   : peluang dasar ★5 (0.6%)
    RATE_4   : peluang dasar ★4 (5.1%)
    SOFT_PITY: mulai pull ke-74 peluang ★5 naik tajam
    HARD_PITY: pull ke-90 DIJAMIN ★5
    HARD_PITY4: pull ke-10 DIJAMIN ★4+ (counter reset tiap dapat 4★/5★)
-   Rumus soft pity (bentuk kuadrat → terasa "menggelinding" dekat hard pity):
-     p(pity) = RATE_5 + (pity-73)^2 * SOPE_EXP
-     pity 74 → 1.2% · pity 80 → 3.5% · pity 89 → 16.0% · pity 90 → 100%  */
+   Rumus soft pity (bentuk kuadrat, di-clamp maksimum 100%):
+     p(pity) = min(1, RATE_5 + (pity-73)^2 * SOPE_EXP)
+     pity 74 → 1.2% · pity 80 → 30% · pity 89 → 100%  */
 var RATE_5=0.006, RATE_4=0.051,
     SOFT_PITY=74, HARD_PITY=90, HARD_PITY4=10, SOPE_EXP=0.006;
 
 function chance5(pity5){
   if(pity5>=HARD_PITY) return 1;                                   // hard pity
-  if(pity5>=SOFT_PITY) return RATE_5+Math.pow(pity5-(SOFT_PITY-1),2)*SOPE_EXP;
+  if(pity5>=SOFT_PITY) return Math.min(1,RATE_5+Math.pow(pity5-(SOFT_PITY-1),2)*SOPE_EXP); // clamp ≤100%
   return RATE_5;                                                    // base
 }
 function randOf(list){return list[Math.floor(Math.random()*list.length)]}
@@ -40,8 +40,9 @@ window.GachaCore={
     if(got5){
       s.pity5=0; s.pity4=0;            // ★4 pity reset juga (spek)
       s.fiveTotal=(s.fiveTotal||0)+1;
-      s.lastFivePull=s.pulls-(s.lastFivePull||0); // jarak sejak ★5 sebelumnya
-      (s.fiveLog=s.fiveLog||[]).push(s.lastFivePull);
+      s.lastFiveAt=s.pulls;
+      (s.fiveLog=s.fiveLog||[]).push(s.lastFiveAt-(s.prevFiveAt||0));
+      s.prevFiveAt=s.lastFiveAt;
       /* 50/50: kalah sekali → guaranteed → ★5 berikutnya PASTI featured */
       var featured=ctx.featured&&(s.guaranteed||Math.random()<0.5);
       s.guaranteed=ctx.featured&&!featured;
@@ -49,6 +50,7 @@ window.GachaCore={
       var pool5=ctx.featured
         ? (featured?ctx.items5.filter(function(x){return x.featured}):ctx.items5.filter(function(x){return !x.featured}))
         : ctx.items5;
+      if(!pool5.length)pool5=ctx.items5; /* guard: misconfig pool kosong */
       return {item:randOf(pool5),featured:!!featured};
     }
     if(got4){ s.pity4=0; return {item:randOf(ctx.items4),featured:false}; }

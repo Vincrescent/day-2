@@ -14,8 +14,7 @@ animasi orb + card reveal.
    ```
    lalu buka `http://localhost:8080`.
 
-Three.js dimuat dari CDN (`cdnjs.cloudflare.com`). Jika CDN mati atau perangkat tidak mendukung
-WebGL, aplikasi otomatis turun ke animasi CSS 2D (fallback) tanpa mengganggu pull logic.
+Three.js di-vendor lokal (`js/vendor/three.min.js`) agar aplikasi tetap jalan tanpa CDN. Jika file vendor hilang atau perangkat tidak mendukung WebGL, aplikasi otomatis turun ke animasi CSS 2D (fallback) tanpa mengganggu pull logic.
 
 ## Struktur
 
@@ -24,7 +23,7 @@ index.html          shell UI (banner, dock pity, riwayat)
 css/style.css       design token + layout + keyframes 2D
 js/items.js         katalog item original + rarity + warna
 js/gacha-core.js    logika probabilitas & pity (inti, bisa diunit-test)
-js/portrait.js      helper portrait generatif (opsional, dipakai UI)
+js/vendor/three.min.js  Three.js r128 lokal untuk mode offline
 js/scene3d.js       summon cinematic: starfield + crystal orb + burst + flash + camera shake
 js/scene2d.js       fallback CSS-only saat WebGL/CDN tidak tersedia
 js/app.js           orkestrasi UI: state, pity bar, history, currency, skip, hasil
@@ -38,7 +37,7 @@ js/app.js           orkestrasi UI: state, pity bar, history, currency, skip, has
 - ★3 Common: sisanya (~94.3%)
 
 ### Pity
-- **Soft pity ★5:** sejak pull ke-74 peluang ★5 naik tajam (rumus: `0.006 + (pity-73)^2 * 0.006`).
+- **Soft pity ★5:** sejak pull ke-74 peluang ★5 naik tajam (rumus kuadrat, di-clamp maksimum 100%).
 - **Hard pity ★5:** pull ke-90 **dijamin** ★5.
 - **Hard pity ★4:** maksimal 10 pull tanpa ★4 → pull ke-10 dijamin ★4; counter reset saat dapat ★4/★5.
 - Counter pity disimpan di `localStorage`.

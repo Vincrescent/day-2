@@ -121,8 +121,9 @@ function rates(){
 }
 
 /* ── HASIL: showcase ★5 → grid kartu stagger ── */
-function results(list){
-  if(skipped)return; /* sudah di-render lewat Skip — abaikan callback terlambat */
+function results(list,force){
+  if(skipped&&!force)return; /* callback animasi terlambat diabaikan */
+  if(force){grid(list);return}
   var has5=list.some(function(x){return x.item.rarity===5});
   if(has5)showcase(list.filter(function(x){return x.item.rarity===5})[0].item,function(){grid(list)});
   else grid(list);
@@ -192,7 +193,7 @@ function pull(n){
     /* batalkan animasi 3D & 2D (loop rAF + timer SFX) */
     if(window.Scene3D.abort)window.Scene3D.abort();
     if(window.Scene2D.abort)window.Scene2D.abort();
-    results(list);
+    results(list,true);
   };
   window.Scene3D.run($('stage'),list.map(function(x){return x.item}),function(){results(list)});
 }
