@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="night">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUMENVEIL — Astral Wish</title>
+<meta name="description" content="Sistem gacha original bergaya 'wish' — Three.js cinematic summon, pity system, 50/50. Semua aset generatif, tanpa IP pihak ketiga.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+
+<!--
+  Three.js dimuat lewat dynamic import() di js/scene3d.js (bukan <script> di sini) supaya:
+  1) kalau CDN mati / WebGL tidak support, aplikasi tetap jalan penuh di fallback 2D,
+  2) halaman bisa diuji di jsdom (yang tidak punya WebGL) tanpa error.
+-->
+</head>
+<body>
+
+<!-- ══════════════════════════ TOP BAR ══════════════════════════ -->
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-sigil" viewBox="0 0 40 40" aria-hidden="true">
+      <defs>
+        <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"  stop-color="#ffd76e"/>
+          <stop offset="55%" stop-color="#b06bff"/>
+          <stop offset="100%" stop-color="#4aa3ff"/>
+        </linearGradient>
+      </defs>
+      <path d="M20 2 24.8 14.2 37.5 15 27.5 23.4 30.6 36 20 29 9.4 36 12.5 23.4 2.5 15 15.2 14.2Z"
+            fill="url(#brandGrad)" opacity=".95"/>
+      <circle cx="20" cy="20" r="4.6" fill="#0a0d1c"/>
+      <circle cx="20" cy="20" r="2.2" fill="url(#brandGrad)"/>
+    </svg>
+    <div class="brand-text">
+      <h1>LUMENVEIL</h1>
+      <p>Astral Wish · banner original</p>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <!-- Currency -->
+    <div class="wallet" id="wallet" title="Klik untuk isi gems (dev top-up)">
+      <svg viewBox="0 0 24 24" class="gem-icon" aria-hidden="true">
+        <path d="M12 2 20 8l-8 14L4 8Z" fill="url(#gemFill)"/>
+        <path d="M12 2 20 8H4Z" fill="#fff" opacity=".35"/>
+        <defs>
+          <linearGradient id="gemFill" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#8ef0ff"/><stop offset="100%" stop-color="#3d6bff"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span id="gemCount" class="gem-count">0</span>
+      <span class="wallet-plus">+</span>
+    </div>
+
+    <button class="ghost-btn" id="btnRates" aria-expanded="false">✦ Rate &amp; Pity</button>
+    <button class="ghost-btn" id="btnSfx" aria-pressed="true" title="SFX aktif">🔊 SFX</button>
+    <button class="ghost-btn" id="btnMode" title="Ganti engine animasi (3D WebGL / 2D CSS)">◈ 3D</button>
+  </div>
+</header>
+
+<!-- ══════════════════════════ MAIN ══════════════════════════ -->
+<main class="layout">
+
+  <!-- ───────── BANNER (GachaBanner) ───────── -->
+  <section class="banner-panel" id="bannerPanel" aria-label="Banner wish">
+    <!-- background generatif: SVG pattern + gradient, bukan artwork eksternal -->
+    <div class="banner-bg" aria-hidden="true">
+      <div class="banner-aurora"></div>
+      <div class="banner-grid"></div>
+      <svg class="banner-rings" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <radialGradient id="coreGlow" cx="50%" cy="46%" r="46%">
+            <stop offset="0%"  stop-color="#ffe9a8" stop-opacity=".85"/>
+            <stop offset="34%" stop-color="#c07dff" stop-opacity=".35"/>
+            <stop offset="100%" stop-color="#070a17" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="ringStroke" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ffd76e" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#4aa3ff" stop-opacity=".25"/>
+          </linearGradient>
+        </defs>
+        <rect width="800" height="600" fill="url(#coreGlow)"/>
+        <g fill="none" stroke="url(#ringStroke)" stroke-width="1.1">
+          <ellipse cx="400" cy="276" rx="118" ry="118"/>
+          <ellipse cx="400" cy="276" rx="176" ry="176" opacity=".6"/>
+          <ellipse cx="400" cy="276" rx="242" ry="242" opacity=".34"/>
+          <ellipse cx="400" cy="276" rx="322" ry="322" opacity=".18"/>
+        </g>
+        <g id="bannerGlyphs" stroke="#ffe0a0" stroke-opacity=".55" fill="none" stroke-width="1.4">
+          <!-- rune ticks diisi JS (deterministic) -->
+        </g>
+      </svg>
+      <div class="banner-vignette"></div>
+    </div>
+
+    <div class="banner-content">
+      <div class="banner-tag">BANNER TERBATAS · CELESTIAL FORGE</div>
+      <h2 class="banner-title" id="bannerTitle">Crown of Embers</h2>
+      <p class="banner-sub" id="bannerSub">Rate-up: <strong>Virelai, Crown of Embers</strong> ★5</p>
+
+      <div class="featured-card" id="featuredCard">
+        <div class="featured-art" id="featuredArt" style="background-image:url('assets/items/virelai.png')"></div>
+        <div class="featured-meta">
+          <span class="rarity-stars" data-r="5">★★★★★</span>
+          <span class="featured-name" id="featuredName">Virelai</span>
+          <span class="featured-type" id="featuredType">Ember Dancer · 5★ Featured</span>
+          <div class="featured-chance" id="featuredChance">Peluang saat ★5 muncul: 50% (naik 100% setelah guarantee)</div>
+        </div>
+      </div>
+
+      <div class="banner-timer" id="bannerTimer">Berakhir: — </div>
+    </div>
+
+    <!-- ───────── PULL CONTROLS ───────── -->
+    <div class="pull-dock">
+      <div class="pity-strip" id="pityStrip">
+        <div class="pity-chip">
+          <label>★5 Pity</label>
+          <div class="pity-bar"><i id="pity5Bar"></i></div>
+          <b id="pity5Num">0<small>/90</small></b>
+        </div>
+        <div class="pity-chip">
+          <label>★4 Pity</label>
+          <div class="pity-bar p4"><i id="pity4Bar"></i></div>
+          <b id="pity4Num">0<small>/10</small></b>
+        </div>
+        <div class="pity-chip guarantee" id="guaranteeChip" title="Setelah kalah 50/50, ★5 berikutnya pasti featured">
+          <label>Status 50/50</label>
+          <b id="guaranteeLabel">Fair</b>
+        </div>
+      </div>
+
+      <div class="pull-buttons">
+        <button class="pull-btn single" id="btnPull1">
+          <span class="pb-label">Wish ×1</span>
+          <span class="pb-cost"><i class="dot-gem"></i>160</span>
+        </button>
+        <button class="pull-btn multi" id="btnPull10">
+          <span class="pb-label">Wish ×10</span>
+          <span class="pb-cost"><i class="dot-gem"></i>1600 <em>+1 ★4 guaranteed</em></span>
+        </button>
+      </div>
+      <p class="pull-hint" id="pullHint">Tarik 10× minimal menjatuhkan satu ★4 (hard pity 10).</p>
+    </div>
+  </section>
+
+  <!-- ───────── SIDE PANEL: rate info (collapsible) ───────── -->
+  <aside class="side-panel" id="sidePanel" aria-hidden="true">
+    <div class="panel-head">
+      <h3>Rate &amp; Mekanik Pity</h3>
+      <button class="icon-btn" id="btnCloseRates" aria-label="Tutup">✕</button>
+    </div>
+    <div class="panel-body" id="rateBody"><!-- diisi JS --></div>
+  </aside>
+
+  <!-- ───────── LOG + STATS ───────── -->
+  <section class="trackers">
+    <div class="card stats-card">
+      <h3>Statistik</h3>
+      <div class="stat-grid" id="statGrid"></div>
+    </div>
+
+    <div class="card history-card">
+      <div class="card-head">
+        <h3>Riwayat Wish</h3>
+        <div class="card-tools">
+          <button class="mini-btn" id="btnExport">Export JSON</button>
+          <button class="mini-btn danger" id="btnClearLog">Reset Log</button>
+          <button class="mini-btn danger" id="btnResetAll">Reset Semua</button>
+        </div>
+      </div>
+      <div class="history-scroll" id="historyLog" role="log" aria-live="polite"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ══════════════════════════ OVERLAY ANIMASI ══════════════════════════ -->
+<div class="stage" id="stage" hidden>
+  <!-- canvas 3D (Three.js) -->
+  <canvas id="gl" class="gl-canvas"></canvas>
+  <!-- lapisan 2D: fallback + flash + rays CSS -->
+  <div class="fx-2d" id="fx2d"></div>
+  <div class="flash" id="flash"></div>
+
+  <!-- HTML overlay di atas 3D: judul, orb info, tombol skip -->
+  <div class="stage-ui">
+    <div class="stage-caption" id="stageCaption"></div>
+    <button class="skip-btn" id="btnSkip" hidden>Skip ▸▸</button>
+    <div class="batch-tally" id="batchTally" hidden></div>
+  </div>
+
+  <!-- hasil -->
+  <div class="result-layer" id="resultLayer" hidden></div>
+</div>
+
+<div class="toast-rack" id="toastRack" aria-live="polite"></div>
+
+<footer class="footer">
+  <p><strong>LUMENVEIL</strong> — proyek original Day 2 "30 Days Make a Project". Mekanik terinspirasi
+  genre gacha; semua nama, karakter, kode, dan aset visual di sini dibuat orisinal (SVG/gradient generatif),
+  bukan aset game berhak cipta mana pun.</p>
+</footer>
+
+<script src="js/items.js"></script>
+<script src="js/gacha-core.js"></script>
+<script src="js/portrait.js"></script>
+<script src="js/sfx.js"></script>
+<script src="js/scene2d.js"></script>
+<script src="js/scene3d.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
