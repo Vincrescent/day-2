@@ -1,0 +1,72 @@
+// probe.html — ukur geometri panel + tumpukan z-index via console.log.
+// Dibuka lewat MS Edge headless: msedge --headless --disable-gpu --dump-dom https://localhost:4100/
+// atau langsung di browser biasa.
+console.clear();
+(function(){
+  function el(id){const e=document.getElementById(id);return e||{id,offsetTop:0,offsetLeft:0,offsetWidth:0,offsetHeight:0,style:{},getBoundingClientRect:function(){return {top:0,left:0,width:0,height:0}}}};
+  function cs(e,p){return getComputedStyle(e).getPropertyValue(p).trim()}
+  function rec(id){const e=el(id);if(!e)return{id,note:'not found'}}
+  const banners=[...document.querySelectorAll('.banner-tab,.banner-content,.pull-dock')]
+  const hist=el('historyLog');
+  const rHist=hist.getBoundingClientRect();
+  const parent=hist.parentElement;
+  const parentR=parent.getBoundingClientRect();
+  const scrollH=hist.scrollHeight;
+  const clientH=hist.clientHeight;
+  const maxH=cs(hist,'max-height')||'none';
+  const height=cs(hist,'height')||'auto';
+  const overflowY=cs(hist,'overflow-y');
+  const overflowX=cs(hist,'overflow-x');
+
+  // cek overlap topbar vs banner
+  const top=el('bannerTabs').getBoundingClientRect();
+  const tb=el('bannerPanel').getBoundingClientRect();
+  const pull=el('btnPull1')&&el('btnPull1').getBoundingClientRect();
+
+  // cek overlay lain menutupi
+  const overlays=[...document.querySelectorAll('.auth-overlay,.stage,.showcase,.result-layer')].filter(e=>!e.hidden);
+  const oc=overlays.map(o=>({id:o.id,top:o.getBoundingClientRect().top,left:o.getBoundingClientRect().left,w:o.offsetWidth,h:o.offsetHeight,z:cs(o,'z-index')}));
+
+  // check history card height
+  const cardH=parent?parent.offsetHeight:'n/a';
+  const containerRect=parent&&parent.getBoundingClientRect();
+  const mainRect=document.querySelector('main.layout')&&document.querySelector('main.layout').getBoundingClientRect();
+
+  console.log('=== HISTORY PANEL METRICS ===');
+  console.log('historyLog rect:',JSON.stringify(rHist));
+  console.log('parent rect:',containerRect?JSON.stringify(containerRect):'no parent');
+  console.log('scrollHeight:',scrollH,'clientHeight:',clientH,'max-height:',maxH,'height:',height,'overflow-y:',overflowY,'overflow-x:',overflowX);
+  console.log('history-card height (parent.offsetHeight):',cardH,'scrollHeight:',parent?parent.scrollHeight:'n/a');
+
+  console.log('\n=== TOPBAR OVERLAP CHECKS ===');
+  console.log('bannerTabs top:',top.top.toFixed(1),'bottom:',top.bottom.toFixed(1));
+  console.log('topbar bottom:',tb.top.toFixed(1),'(banner-panel top)');
+  console.log('pull buttons rect:',pull?JSON.stringify(pull):'no pull btn');
+
+  console.log('\n=== ACTIVE OVERLAYS ===');
+  console.log(JSON.stringify(oc,null,2));
+
+  // Detect: apakah ada elemen overlay yang menutupi area riwayat?
+  const histCenter={x:rHist.left+rHist.width/2, y:rHist.top+rHist.height/2};
+  const covering=[];
+  document.querySelectorAll('*').forEach(function(node){
+    if(node===hist||hist.contains(node))return;
+    const r=node.getBoundingClientRect();
+    if(r.width<=0||r.height<=0)return;
+    if(r.right<histCenter.x-5||r.left>histCenter.x+5||r.bottom<histCenter.y-5||r.top>histCenter.y+5)return;
+    const zi=parseInt(cs(node,'z-index'));
+    const op=parseFloat(cs(node,'opacity'));
+    const disp=cs(node,'display');
+    const vis=disp!=='none'&&op>0&&!node.hidden;
+    if(vis)covering.push({tag:node.tagName,id:node.id||'',class:(node.className||'').toString().slice(0,60),z:zi,top:r.top.toFixed(0),left:r.left.toFixed(0),w:r.width.toFixed(0),h:r.height.toFixed(0),opacity:op.toFixed(2)});
+  });
+  console.log('\n=== ELEMENTS COVERING historyLog CENTER ===');
+  console.log(JSON.stringify(covering,null,2));
+
+  // print all z-index > 1 on page
+  const highZ=[...document.querySelectorAll('*')].filter(n=>{
+    const z=parseInt(cs(n,'z-index'));return !isNaN(z)&&z>=1&&(cs(n,'position')!=='static'||z>1);
+  }).map(n=>({tag:n.tagName,id:n.id||'',z:parseInt(cs(n,'z-index')),pos:cs(n,'position'),cls:(n.className||'').toString().slice(0,40)})).sort((a,b)=>b.z-a.z).slice(0,25);
+  console.log('\n=== HIGH Z-INDEX ELEMENTS ===');
+  console.log(JSON.stringify(highZ,null,2));
+})();

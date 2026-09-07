@@ -1,3 +1,7 @@
+/* ══════════════════════════════════════════════════════════════════════
+   LUMENVEIL — index.html (final, dengan Auth Gate + dual-mode API)
+   Port 8080 = static fallback (demo lokal), port 4000 = full backend.
+   ══════════════════════════════════════════════════════════════════════ */
 <!DOCTYPE html>
 <html lang="id" data-theme="night">
 <head>
@@ -58,7 +62,11 @@
 
     <button class="ghost-btn" id="btnRates" aria-expanded="false">✦ Rate &amp; Pity</button>
     <button class="ghost-btn" id="btnSfx" aria-pressed="true" title="SFX aktif">🔊 SFX</button>
-    <span class="ghost-btn engine-badge" id="btnMode" title="Engine animasi aktif">◈ …</span>
+    <span class="ghost-btn engine-badge" id="btnMode" title="Engine animasi aktif">◈ ...</span>
+    <span class="ghost-btn engine-badge" id="modeBadge" title="Mode data">◈ LOCAL</span>
+    <button class="ghost-btn" id="btnUser" hidden>
+      <span id="userChipName">—</span> · <span style="opacity:.7">logout</span>
+    </button>
   </div>
 </header>
 
@@ -191,6 +199,27 @@
   </section>
 </main>
 
+<!-- ══════════════════════════ AUTH GATE (login/daftar) ══════════════════════════ -->
+<div class="auth-overlay" id="authOverlay" hidden>
+  <div class="auth-card">
+    <h2>LUMENVEIL</h2>
+    <p class="shop-hint" style="text-align:center;margin-bottom:20px">
+      Simpan progress di akun. Login diperlukan untuk pull server-side (anti-manipulasi).<br>
+      <span style="opacity:.6;font-size:11px">Alternatif: main offline (data tersimpan lokal).</span>
+    </p>
+    <form id="authForm" autocomplete="on">
+      <input class="auth-input" id="authUsername" placeholder="Username (3-20 karakter)" maxlength="20" required autofocus>
+      <input class="auth-input" id="authPassword" type="password" placeholder="Password (min 4 karakter)" minlength="4" required>
+      <button class="auth-btn" id="authSubmit" type="submit">Masuk / Daftar</button>
+    </form>
+    <p class="auth-toggle" id="authToggle">Belum punya akun? Klik lagi tombol Masuk/Daftar</p>
+    <p class="auth-toggle">
+      <button class="mini-btn" id="btnOfflineOnly" style="margin-top:14px">Main Offline (tanpa login)</button>
+    </p>
+    <p id="authError" style="color:#ff7893;text-align:center;margin-top:10px;font-size:13px"></p>
+  </div>
+</div>
+
 <!-- ══════════════════════════ OVERLAY ANIMASI ══════════════════════════ -->
 <div class="stage" id="stage" hidden>
   <!-- canvas 3D (Three.js) -->
@@ -219,9 +248,7 @@
   bukan aset game berhak cipta mana pun.</p>
 </footer>
 
-<!-- Three.js r128 + postprocessing di-vendor lokal (offline-mandiri, tanpa CDN).
-     Urutan PENTING: shader dulu, lalu composer, lalu bloom (bloom butuh LuminosityHighPassShader).
-     Kalau salah satu gagal → flag di-set → scene3d.js otomatis turun ke fallback CSS 2D. -->
+<!-- Three.js r128 + postprocessing di-vendor lokal (offline-mandiri, tanpa CDN). -->
 <script src="js/vendor/three.min.js"></script>
 <script src="js/vendor/LuminosityHighPassShader.js"></script>
 <script src="js/vendor/CopyShader.js"></script>

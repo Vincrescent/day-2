@@ -43,8 +43,12 @@ try{
   }
 }catch(e){jsErrors.push('eval '+f+': '+e)}
 
-/* pancing init manual (DOMContentLoaded sudah lewat saat kita eval) */
+/* pancing init: eval app.js. jsdom memuat readyState='loading' → init()
+   menunggu DOMContentLoaded yang jsdom fire sendiri beberapa tick kemudian.
+   JANGAN dispatch manual: listener dobel (init punya guard __lumenveilBooted,
+   tapi tetap lebih bersih menunggu event aslinya). */
 try{window.eval(read('js/app.js'))}catch(e){jsErrors.push('app.js: '+e)}
+await sleep(100); /* biarkan DOMContentLoaded jsdom terpanggil */
 
 /* ── 1. boot bersih ── */
 ok(window.__lumenveilBooted===true,'app boot tanpa error init');
