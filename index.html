@@ -69,7 +69,7 @@
   <section class="banner-panel" id="bannerPanel" aria-label="Banner wish">
     <!-- background: key art generatif + lapisan aurora/grid/rings + vignette -->
     <div class="banner-bg" aria-hidden="true">
-      <div class="banner-art" style="background-image:url('assets/banner-astral.png')"></div>
+      <div class="banner-art" style="background-image:url('assets/banner-astral.webp')"></div>
       <div class="banner-aurora"></div>
       <div class="banner-grid"></div>
       <svg class="banner-rings" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
@@ -104,7 +104,7 @@
       <p class="banner-sub" id="bannerSub">Rate-up: <strong>Virelai, Crown of Embers</strong> ★5</p>
 
       <div class="featured-card" id="featuredCard">
-        <div class="featured-art" id="featuredArt" style="background-image:url('assets/items/virelai.png')"></div>
+        <div class="featured-art" id="featuredArt" style="background-image:url('assets/items/virelai.webp')"></div>
         <div class="featured-meta">
           <span class="rarity-stars" id="rarityStars" data-r="5">★★★★★</span>
           <span class="featured-name" id="featuredName">Virelai</span>
@@ -219,9 +219,23 @@
   bukan aset game berhak cipta mana pun.</p>
 </footer>
 
-<!-- Three.js r128 di-vendor lokal (offline-mandiri, tanpa ketergantungan CDN).
-     Kalau file ini hilang, scene3d.js otomatis turun ke fallback CSS 2D. -->
-<script src="js/vendor/three.min.js" onerror="window.__THREE_LOAD_FAIL=true"></script>
+<!-- Three.js r128 + postprocessing di-vendor lokal (offline-mandiri, tanpa CDN).
+     Urutan PENTING: shader dulu, lalu composer, lalu bloom (bloom butuh LuminosityHighPassShader).
+     Kalau salah satu gagal → flag di-set → scene3d.js otomatis turun ke fallback CSS 2D. -->
+<script src="js/vendor/three.min.js"></script>
+<script src="js/vendor/LuminosityHighPassShader.js"></script>
+<script src="js/vendor/CopyShader.js"></script>
+<script src="js/vendor/EffectComposer.js"></script>
+<script src="js/vendor/RenderPass.js"></script>
+<script src="js/vendor/ShaderPass.js"></script>
+<script src="js/vendor/UnrealBloomPass.js"></script>
+<script src="js/vendor/RGBELoader.js"></script>
+<script>
+  if(!(window.THREE&&window.THREE.EffectComposer&&window.THREE.UnrealBloomPass&&window.THREE.RGBELoader)){
+    window.__THREE_LOAD_FAIL=true;
+    console.warn('[LUMENVEIL] Three.js postprocessing tidak lengkap — fallback ke engine 2D.');
+  }
+</script>
 <script src="js/items.js"></script>
 <script src="js/gacha-core.js"></script>
 <script src="js/banners.js"></script>

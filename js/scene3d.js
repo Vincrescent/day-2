@@ -24,12 +24,46 @@ function boot(){
   var THREE=window.THREE;
   try{
     var canvas=document.getElementById('gl');
-    var renderer=new THREE.WebGLRenderer({canvas:canvas,alpha:true,antialias:true});
+    var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,powerPreference:'high-performance'});
     renderer.setPixelRatio(Math.min(devicePixelRatio,2));
     renderer.setSize(innerWidth,innerHeight);
+    /* tone mapping filmik + color management (r128) */
+    renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure=1.05;
+    renderer.outputEncoding=THREE.sRGBEncoding;
     var scene=new THREE.Scene();
+    scene.background=new THREE.Color(0x050612); /* opaque — aman untuk EffectComposer */
     var camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,100);
     var BASE_Z=7; camera.position.z=BASE_Z;
+
+    /* ── Composer + Bloom (effect rendering) ─────────────────────────── */
+    var composer=null;
+    try{composer=new THREE.EffectComposer(renderer)}catch(e){}
+    if(composer){
+      try{
+        composer.addPass(new THREE.RenderPass(scene,camera));
+        var bloomPass=new THREE.UnrealBloomPass(
+          new THREE.Vector2(innerWidth,innerHeight),
+          1.0,   // strength
+          0.4,   // radius
+          0.85   // threshold — glow mulai di level 85% cahaya
+        );
+        composer.addPass(bloomPass);
+      }catch(e){composer=null}
+    }
+
+    /* ── HDRI environment map untuk refleksi kristal ────────────────────
+       Sumber: Poly Haven (CC0). Jika gagal dimuat: tetap aman — material
+       tetap glowing lewat emissive, background tetap solid gelap. */
+    var envMap=null;
+    var gemMat,haloMat,ringMat; /* diisi saat orb dibangun — HDRI refresh */
+    try{
+      new THREE.RGBELoader().load('poly-haven/kloppenheim_02_1k.hdr',function(tex){
+        tex.mapping=THREE.EquirectangularReflectionMapping;
+        envMap=tex;
+        if(gemMat)gemMat.envMap=tex;   /* refleksi real-time di permukaan kristal */
+      },undefined,function(){/* gagal → emissive saja */});
+    }catch(e){}
 
     /* registry resource → dipakai dispose() */
     var RES=[]; function keep(x){if(x&&typeof x.dispose==='function')RES.push(x);return x}
@@ -57,10 +91,13 @@ function boot(){
 
     /* ── orb: kristal + halo + 2 ring ── */
     var orbGroup=new THREE.Group();scene.add(orbGroup);
-    var gem=new THREE.Mesh(keep(new THREE.IcosahedronGeometry(1.05,1)),keep(new THREE.MeshStandardMaterial({color:0xffbf50,emissive:0xff7b18,emissiveIntensity:2.5,roughness:.15,metalness:.4,flatShading:true,transparent:true,opacity:.98})));
-    var halo=new THREE.Sprite(keep(new THREE.SpriteMaterial({map:tex,color:0xffc860,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending})));
+    gemMat=keep(new THREE.MeshStandardMaterial({color:0xffbf50,emissive:0xff7b18,emissiveIntensity:2.5,roughness:.12,metalness:.55,flatShading:true,transparent:true,opacity:.98}));
+    var gem=new THREE.Mesh(keep(new THREE.IcosahedronGeometry(1.05,1)),gemMat);
+    haloMat=keep(new THREE.SpriteMaterial({map:tex,color:0xffc860,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));
+    var halo=new THREE.Sprite(haloMat);
     halo.scale.setScalar(5);
-    var ring=new THREE.Mesh(keep(new THREE.TorusGeometry(1.55,.02,8,90)),keep(new THREE.MeshBasicMaterial({color:0xffd56b,transparent:true,opacity:.85,blending:THREE.AdditiveBlending})));
+    ringMat=keep(new THREE.MeshBasicMaterial({color:0xffd56b,transparent:true,opacity:.85,blending:THREE.AdditiveBlending}));
+    var ring=new THREE.Mesh(keep(new THREE.TorusGeometry(1.55,.02,8,90)),ringMat);
     var ring2=new THREE.Mesh(keep(new THREE.TorusGeometry(2.1,.008,8,90)),keep(new THREE.MeshBasicMaterial({color:0x8fb4ff,transparent:true,opacity:.5,blending:THREE.AdditiveBlending})));
     orbGroup.add(gem,halo,ring,ring2);
     var coreLight=new THREE.PointLight(0xffb83d,6,14);orbGroup.add(coreLight);
@@ -116,12 +153,13 @@ function boot(){
       raf=requestAnimationFrame(idle);
       var t=performance.now();
       stars.rotation.y=t*.000025;ring.rotation.z-=.018;ring2.rotation.z+=.01;
-      if(!playing)renderer.render(scene,camera);
+      if(!playing)renderFrame();
     }
+    function renderFrame(){if(composer)composer.render();else renderer.render(scene,camera)}
     idle();
 
     window.addEventListener('resize',onResize);
-    function onResize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+    function onResize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(composer)composer.setSize(innerWidth,innerHeight)}
 
     window.Scene3D.ready=true;
 
@@ -247,7 +285,7 @@ function boot(){
           camera.position.y=(Math.random()-.5)*shake*.5;
         }
 
-        if(p<1){renderer.render(scene,camera);requestAnimationFrame(anim)}
+        if(p<1){renderFrame();requestAnimationFrame(anim)}
         else{clear(p)}
 
         function clear(){

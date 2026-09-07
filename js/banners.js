@@ -12,11 +12,11 @@ function names(list){return list.map(byId).filter(Boolean)}
 window.BANNERS=[
   {id:'crown',tag:'BANNER TERBATAS · CELESTIAL FORGE',title:'Crown of Embers',
    sub:'Rate-up: <strong>Virelai, Crown of Embers</strong> ★5',
-   featuredName:'Virelai',art:'assets/items/virelai.png',accent:'#ffd36b',
+   featuredName:'Virelai',art:'assets/items/virelai.webp',accent:'#ffd36b',
    featured:{name:'Virelai',pool5:['Orin Vale','Nyra Sol'],pool4:['Aster Pike','Mira Quill','Kestrel-9'],pool3:['Cinder Pin','Luma Thread','Brasswing','Vesper Bell']}},
   {id:'forge',tag:'BANNER PERMANEN · ASTRAL ARMORY',title:'Forges of the Void',
    sub:'Rate-up: <strong>Aster Pike, Skyline Sentinel</strong> ★4',
-   featuredName:'Aster Pike',art:'assets/items/aster.png',accent:'#8fb4ff',
+   featuredName:'Aster Pike',art:'assets/items/aster.webp',accent:'#8fb4ff',
    featured:{name:'Aster Pike',pool5:['Orin Vale','Nyra Sol'],pool4:['Mira Quill','Kestrel-9'],pool3:['Cinder Pin','Luma Thread','Brasswing','Vesper Bell']}}
 ];
 
