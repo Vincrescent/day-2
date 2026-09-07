@@ -7,7 +7,7 @@ var KEY='lumenveil-state-v2';
 var DEFAULT={v:2,gems:16000,sigils:0,owned:{},history:[],banner:'crown',
   bannerEnd:0,banners:{crown:{pulls:0,pity5:0,pity4:0,guaranteed:false,fiveTotal:0,fiveLog:[]},
                        forge:{pulls:0,pity5:0,pity4:0,guaranteed:false,fiveTotal:0,fiveLog:[]}}};
-var busy=false,skipped=false,showcaseTimer=null;
+var busy=false,skipped=false,showcaseTimer=null,gridToken=0;
 
 /* ── state + migrasi versi lama (v1 flat → v2 per-banner) ── */
 function load(){
@@ -35,7 +35,7 @@ function $(id){return document.getElementById(id)}
 function esc(x){return String(x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function time(x){return new Date(x).toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'})}
 function toast(msg){var e=document.createElement('div');e.className='toast';e.textContent=msg;$('toastRack').appendChild(e);setTimeout(function(){e.remove()},3500)}
-function bs(){return state.banners[state.banner]}
+function bs(){var s=state.banners[state.banner];if(!s){state.banner='crown';s=state.banners.crown}return s}
 function totalPulls(){return Object.keys(state.banners).reduce(function(a,k){return a+state.banners[k].pulls},0)}
 function totalFives(){return Object.keys(state.banners).reduce(function(a,k){return a+(state.banners[k].fiveTotal||0)},0)}
 function countRare(){return state.history.filter(function(x){return x.rarity===4}).length}
@@ -57,7 +57,15 @@ function render(){
   $('bannerTitle').textContent=b.title;
   $('bannerSub').innerHTML=b.sub;
   $('featuredName').textContent=b.featuredName;
-  $('featuredType').textContent=(b.featured.name&&GACHA_ITEMS.filter(function(x){return x.name===b.featured.name})[0].rarity===5)?'★5 Featured · 50/50':'★4 Rate-up';
+  /* meta featured ikut banner: ★5 featured → 50/50 aktif; ★4 rate-up → tidak */
+  var featItem=GACHA_ITEMS.filter(function(x){return x.name===b.featuredName})[0];
+  var featR=featItem?featItem.rarity:5;
+  $('rarityStars').textContent='★'.repeat(featR);
+  $('rarityStars').setAttribute('data-r',featR);
+  $('featuredType').textContent=featR===5?'★5 Featured · 50/50':'★4 Rate-up · tanpa 50/50';
+  $('featuredChance').textContent=featR===5
+    ?'Peluang saat ★5 muncul: 50% featured (100% setelah kalah)'
+    :'Rate-up ★4: saat ★4 jatuh, 50% Aster Pike. ★5 tetap dari pool standar.';
   var art=$('featuredArt'); if(art)art.style.backgroundImage="url('"+b.art+"')";
   renderTabs();
   $('statGrid').innerHTML=
@@ -133,7 +141,7 @@ function showcase(item,cb){
   showcaseTimer=setTimeout(go,2200);
 }
 function grid(list){
-  var l=$('resultLayer');
+  var gen=gridToken,l=$('resultLayer');
   l.innerHTML='<h2 class="result-title">Resonansi Terbuka</h2><div class="result-grid">'+
     list.map(function(x,i){
       var it=x.item;
@@ -150,13 +158,13 @@ function grid(list){
   var cards=l.querySelectorAll('.result-card');
   list.forEach(function(x,i){
     setTimeout(function(){
-      if(!cards[i])return;
+      if(gen!==gridToken||!cards[i])return; /* stage sudah ditutup → abaikan */
       cards[i].classList.remove('pending');
       if(x.item.rarity===5){cards[i].classList.add('hit-5');SFX.chime(5);}else SFX.tick();
     },i*100);
   });
 }
-function closeStage(){$('stage').hidden=true;$('resultLayer').hidden=true;$('showcase').hidden=true;busy=false;render()}
+function closeStage(){clearTimeout(showcaseTimer);showcaseTimer=null;gridToken++;$('stage').hidden=true;$('resultLayer').hidden=true;$('showcase').hidden=true;busy=false;render()}
 
 /* ── PULL ── */
 function pull(n){
@@ -175,7 +183,9 @@ function pull(n){
   });
   render();
   $('stage').hidden=false;
-  $('btnSkip').hidden=false;
+  /* Skip baru muncul setelah 1 detik (spek butir 2.7) */
+  $('btnSkip').hidden=true;
+  setTimeout(function(){$('btnSkip').hidden=busy?false:true},1000);
   $('btnSkip').onclick=function(){
     if(skipped)return; skipped=true;
     SFX.tick();
