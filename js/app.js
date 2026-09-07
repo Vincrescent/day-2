@@ -73,7 +73,9 @@ function showAuth(){
   $('authUsername').value='';
   $('authPassword').value='';
   $('authSubmit').textContent=authMode==='login'?'Masuk':'Daftar';
-  $('authToggle').textContent=authMode==='login'?'Belum punya akun? Klik lagi tombol Masuk/Daftar':'Sudah punya akun? Klik lagi tombol Masuk/Daftar';
+  $('authToggle').innerHTML=authMode==='login'
+    ?'Belum punya akun? <b>Klik di sini untuk Daftar</b>'
+    :'Sudah punya akun? <b>Klik di sini untuk Masuk</b>';
 }
 function hideAuth(){
   $('authOverlay').hidden=true;

@@ -199,6 +199,7 @@ app.post('/api/logout',authUser,async(req,res)=>{
 });
 
 /* ── statis: sajikan frontend dari folder atas (satu port, nol CORS) ── */
-app.use(express.static(path.join(__dirname,'..'),{maxAge:'5m'}));
+app.use(express.static(path.join(__dirname,'..'),{maxAge:'0',etag:false,
+  setHeaders(res){res.setHeader('Cache-Control','no-store')}}));
 
 app.listen(PORT,()=>console.log('LUMENVEIL server: http://localhost:'+PORT));
